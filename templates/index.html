@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate Sync | Flask</title>
+    <title>Certificate Sync</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .container {
@@ -20,6 +20,14 @@
             color: #155724;
         }
         .not-synced {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .syncing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .failed {
             background-color: #f8d7da;
             color: #721c24;
         }
@@ -45,15 +53,19 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <p class="mb-0">Sync your certificates to Google Drive.</p>
-                    <form action="{{ url_for('sync') }}" method="post">
-                        <button type="submit" class="btn btn-success">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-upload me-1" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
-                                <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
-                            </svg>
-                            Sync Now
-                        </button>
-                    </form>
+                    <button type="button" onclick="startSync()" class="btn btn-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-upload me-1" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                            <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                        </svg>
+                        Sync Now
+                    </button>
+                </div>
+
+                <div id="sync-progress" style="display:none;">
+                    <p>Sync in progress: <span id="in-progress-count">0</span> files remaining</p>
+                    <p>Completed: <span id="completed-count">0</span></p>
+                    <p>Failed: <span id="failed-count">0</span></p>
                 </div>
 
                 <div class="table-responsive">
@@ -67,14 +79,10 @@
                         <tbody>
                             {% if files %}
                                 {% for file in files %}
-                                    <tr>
+                                    <tr data-path="{{ file.path }}">
                                         <td>{{ file.name }}</td>
                                         <td class="text-end">
-                                            {% if file.sync_status == 'Synced' %}
-                                                <span class="sync-status synced">Synced</span>
-                                            {% else %}
-                                                <span class="sync-status not-synced">Not Synced</span>
-                                            {% endif %}
+                                            <span class="sync-status {{ 'synced' if file.sync_status == 'Synced' else 'not-synced' }}">{{ file.sync_status }}</span>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -92,6 +100,74 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let pollingInterval;
+
+        function startSync() {
+            fetch('/sync', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        if (data.error === 'Authentication required') {
+                            window.location.href = '/authorize';
+                        }
+                    } else {
+                        alert(data.message);
+                        if (data.files) {
+                            document.getElementById('sync-progress').style.display = 'block';
+                            data.files.forEach(file => {
+                                let row = document.querySelector(`tr[data-path="${file}"]`);
+                                if (row) {
+                                    row.querySelector('.sync-status').textContent = 'Syncing';
+                                    row.querySelector('.sync-status').className = 'sync-status syncing';
+                                }
+                            });
+                            startPolling();
+                        }
+                    }
+                });
+        }
+
+        function startPolling() {
+            pollingInterval = setInterval(updateSyncStatus, 2000);
+        }
+
+        function updateSyncStatus() {
+            fetch('/sync_status')
+                .then(response => response.json())
+                .then(data => {
+                    let inProgress = data.in_progress;
+                    let completed = data.completed;
+                    let failed = data.failed;
+
+                    completed.forEach(file => {
+                        let row = document.querySelector(`tr[data-path="${file}"]`);
+                        if (row) {
+                            row.querySelector('.sync-status').textContent = 'Synced';
+                            row.querySelector('.sync-status').className = 'sync-status synced';
+                        }
+                    });
+
+                    failed.forEach(file => {
+                        let row = document.querySelector(`tr[data-path="${file}"]`);
+                        if (row) {
+                            row.querySelector('.sync-status').textContent = 'Failed';
+                            row.querySelector('.sync-status').className = 'sync-status failed';
+                        }
+                    });
+
+                    document.getElementById('in-progress-count').textContent = inProgress.length;
+                    document.getElementById('completed-count').textContent = completed.length;
+                    document.getElementById('failed-count').textContent = failed.length;
+
+                    if (inProgress.length === 0) {
+                        clearInterval(pollingInterval);
+                        document.getElementById('sync-progress').style.display = 'none';
+                    }
+                });
+        }
+    </script>
 </body>
 </html>
