@@ -30,7 +30,7 @@ drive_files_cache = {}
 folder_id_map = {}
 
 
-class CertificateHandler(FileSystemEventHandler):
+class AppHandler(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:
             file_path = event.src_path
@@ -40,7 +40,7 @@ class CertificateHandler(FileSystemEventHandler):
 
 
 def start_observer():
-    event_handler = CertificateHandler()
+    event_handler = AppHandler()
     observer = Observer()
 
     # Ensure main folder exists

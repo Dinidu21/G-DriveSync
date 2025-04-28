@@ -16,7 +16,7 @@ print(app.secret_key)
 
 unsync_files = []
 
-class CertificateHandler(FileSystemEventHandler):
+class AppHandler(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:
             filename = os.path.basename(event.src_path)
@@ -25,7 +25,7 @@ class CertificateHandler(FileSystemEventHandler):
                 print(f"New file detected: {event.src_path}")
 
 def start_observer():
-    event_handler = CertificateHandler()
+    event_handler = AppHandler()
     observer = Observer()
     os.makedirs(LOCAL_FOLDER, exist_ok=True)
     observer.schedule(event_handler, LOCAL_FOLDER, recursive=True)
