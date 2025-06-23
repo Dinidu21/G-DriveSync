@@ -151,7 +151,7 @@
     },
     "SqlSettings": {
         "DriverName": "postgres",
-        "DataSource": "postgres://mmuser:mostest@docker-postgres-1/mattermost_test?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
+        "DataSource": "postgres://mmuser:mmuser_password@docker-postgres-1/mattermost_test?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
         "DataSourceReplicas": [],
         "DataSourceSearchReplicas": [],
         "MaxIdleConns": 20,
