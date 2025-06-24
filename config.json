@@ -303,11 +303,11 @@
         "ShowFullName": true
     },
     "SupportSettings": {
-        "TermsOfServiceLink": "https://mattermost.com/pl/terms-of-use/",
-        "PrivacyPolicyLink": "https://mattermost.com/pl/privacy-policy/",
-        "AboutLink": "https://mattermost.com/pl/about-mattermost",
-        "HelpLink": "https://mattermost.com/pl/help/",
-        "ReportAProblemLink": "https://mattermost.com/pl/report-a-bug",
+        "TermsOfServiceLink": "https://meetrix.io/articles/jitsi-vs-zoom-vs-google-meet/",
+        "PrivacyPolicyLink": "https://meetrix.io/articles/jitsi-vs-zoom-vs-google-meet/",
+        "AboutLink": "https://meetrix.io/articles/jitsi-vs-zoom-vs-google-meet/",
+        "HelpLink": "https://meetrix.io/articles/jitsi-vs-zoom-vs-google-meet/",
+        "ReportAProblemLink": "https://meetrix.io/articles/jitsi-vs-zoom-vs-google-meet/",
         "ReportAProblemType": "default",
         "ReportAProblemMail": "",
         "AllowDownloadLogs": true,
